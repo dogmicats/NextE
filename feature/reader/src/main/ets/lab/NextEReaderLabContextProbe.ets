@@ -71,6 +71,8 @@ export class NextEReaderLabContextProbe {
   }
 }
 
+const READER_LAB_CONTEXT_PROBE_KEY: string = 'v2_readerLabContextProbe'
+
 export function connectNextEReaderLabContextProbe(): NextEReaderLabContextProbe {
-  return AppStorageV2.connect(NextEReaderLabContextProbe, () => new NextEReaderLabContextProbe())!
+  return AppStorageV2.connect(NextEReaderLabContextProbe, READER_LAB_CONTEXT_PROBE_KEY, () => new NextEReaderLabContextProbe())!
 }

@@ -54,7 +54,8 @@ export class ReaderDisplayState {
 }
 
 export function connectReaderDisplay(): ReaderDisplayState {
-  return AppStorageV2.connect(ReaderDisplayState, 'nexte_settings:readerDisplay',
+  // AppStorageV2 keys cannot contain colons (':' trips the ArkUI alias warning for every connect).
+  return AppStorageV2.connect(ReaderDisplayState, 'v2_readerDisplay',
     (): ReaderDisplayState => new ReaderDisplayState())!
 }
 

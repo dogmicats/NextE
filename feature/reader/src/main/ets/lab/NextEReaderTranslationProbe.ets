@@ -113,6 +113,8 @@ export class NextEReaderTranslationProbe {
   }
 }
 
+const READER_TRANSLATION_PROBE_KEY: string = 'v2_readerTranslationProbe'
+
 export function connectNextEReaderTranslationProbe(): NextEReaderTranslationProbe {
-  return AppStorageV2.connect(NextEReaderTranslationProbe, () => new NextEReaderTranslationProbe())!
+  return AppStorageV2.connect(NextEReaderTranslationProbe, READER_TRANSLATION_PROBE_KEY, () => new NextEReaderTranslationProbe())!
 }
