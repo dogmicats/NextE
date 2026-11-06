@@ -19,6 +19,7 @@ import { ScreenOrientationSettings } from './ScreenOrientationSettings'
 import { TabletLayoutSettings } from './TabletLayoutSettings'
 import { SearchHistorySettings } from './SearchHistorySettings'
 import { SearchFilterSettings } from './SearchFilterSettings'
+import { GlobalSearchFilterSettings } from './GlobalSearchFilterSettings'
 import { FavcatListSettings } from './FavcatListSettings'
 import { LocalFavSettings } from './LocalFavSettings'
 import { ViewedHistorySettings } from './ViewedHistorySettings'
@@ -57,6 +58,7 @@ import { connectSiteMode } from '../state/SiteModeState'
 import { connectHomeSource } from '../state/HomeSourceState'
 import { connectFavSelection } from '../state/FavSelectionState'
 import { connectCustomProfiles } from '../state/CustomProfilesState'
+import { globalSearchFilterCacheRevision } from '../state/GlobalSearchFilterState'
 import { CustomProfile } from '../model/CustomProfile'
 
 const MAX_PAGE_CACHE_PRELOAD_CONCURRENCY: number = 2
@@ -106,6 +108,7 @@ export class SettingsBootstrap {
         ReadButtonStyleSettings.restore(context),
         FabLayoutStyleSettings.restore(context),
         SearchFilterSettings.restore(context),
+        GlobalSearchFilterSettings.restore(context),
         FavcatListSettings.restore(context),
         SubtabSelectionSettings.restore(context),
         AppColorFavoritesSettings.restore(context),
@@ -205,7 +208,9 @@ export class SettingsBootstrap {
       const favOrder: string = fav.orderByPosted ? EhConstants.FAV_ORDER_POSTED : EhConstants.FAV_ORDER_FAV
       const keys: string[] = []
       // Home tabs are custom profiles now. Every profile, including favorite-type profiles, owns a
-      // revisioned cache because its query can differ from the standalone Favorites page.
+      // revisioned cache because its query can differ from the standalone Favorites page. Gallery
+      // profile keys use the global-filter-aware revision (D4) so warm-up hits exactly the key
+      // GalleryListViewModel.cacheKey() reads; GlobalSearchFilterSettings.restore has already run.
       const profiles: CustomProfile[] = connectCustomProfiles().profiles
       const selectedProfile: CustomProfile | null = connectCustomProfiles().findByUuid(
         connectCustomProfiles().selectedUuid,
@@ -216,7 +221,7 @@ export class SettingsBootstrap {
           EhPageCacheService.homeProfileKey(
             isEx,
             selectedProfile.uuid,
-            selectedProfile.contentRevision(),
+            globalSearchFilterCacheRevision(selectedProfile),
           ),
         )
       }
@@ -235,7 +240,7 @@ export class SettingsBootstrap {
         if (!p.hidden) {
           SettingsBootstrap.appendPreloadKey(
             keys,
-            EhPageCacheService.homeProfileKey(isEx, p.uuid, p.contentRevision()),
+            EhPageCacheService.homeProfileKey(isEx, p.uuid, globalSearchFilterCacheRevision(p)),
           )
         }
       }

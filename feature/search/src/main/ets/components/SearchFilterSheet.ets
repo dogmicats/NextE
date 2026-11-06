@@ -10,10 +10,20 @@ import {
   Favcat,
   FavSelectionState,
   GroupedListSection,
+  GroupedListItemSection,
   connectFavSelection,
   CategorySelector,
   AdvancedSearchControls,
   SearchFilterSettings,
+  SwipeDeleteAction,
+  TagQueryComposer,
+  TagRow,
+  TagQuery,
+  QueryTag,
+  TagRowItem,
+  TagQueryRowNameCache,
+  GlobalSearchFilterState,
+  connectGlobalSearchFilter,
   SEARCH_SCOPE_FAVORITE,
   SEARCH_SCOPE_GALLERY,
   SEARCH_SCOPE_WATCHED,
@@ -38,6 +48,8 @@ const FORM_FONT_SIZE: number = ThemeConstants.FONT_SIZE_TITLE
 @ComponentV2
 export struct SearchFilterSheet {
   @Local filter: SearchFilterState = connectSearchFilter();
+  @Local gf: GlobalSearchFilterState = connectGlobalSearchFilter();
+  @Local private nameCache: TagQueryRowNameCache = new TagQueryRowNameCache();
   @Local fav: FavSelectionState = connectFavSelection();
   @Local private themeDisplay: ThemeDisplayState = connectThemeDisplay();
   @Param session: SearchSessionState = new SearchSessionState();
@@ -48,6 +60,8 @@ export struct SearchFilterSheet {
     this.scopeItems[0].text = AppStrings.get('search_scope_gallery')
     this.scopeItems[1].text = AppStrings.get('search_scope_watched')
     this.scopeItems[2].text = AppStrings.get('search_scope_favorite')
+    // The global filter may already hold tags restored from disk; resolve their display names up front.
+    this.nameCache.ensure(this.ctx(), this.gf.query)
   }
 
   private bumpApplySeq(): void {
@@ -100,6 +114,51 @@ export struct SearchFilterSheet {
     this.filter.disableUploaderFilter = false
     this.filter.disableTagFilter = false
     this.bumpApplySeq()
+    // Reset stays scoped to the per-search advanced filters: the global filter is an independent
+    // persisted configuration with its own master switch and must survive Reset untouched.
+  }
+
+  // ── global filter (gallery scope only) ─────────────────────────────────────
+  // Every edit bumps gf.applySeq; the hosting page (GallerySearchPage) monitors it to persist and
+  // re-run the current query. The sheet itself never persists the global filter.
+
+  private bumpGlobalApplySeq(): void {
+    this.gf.applySeq = this.gf.applySeq + 1
+  }
+
+  private setGlobalEnabled(value: boolean): void {
+    this.gf.enabled = value
+    this.bumpGlobalApplySeq()
+  }
+
+  private setGlobalQuery(value: string): void {
+    this.gf.query = value
+    this.bumpGlobalApplySeq()
+    this.nameCache.ensure(this.ctx(), this.gf.query)
+  }
+
+  private globalTagRowItems(): TagRowItem[] {
+    const out: TagRowItem[] = []
+    TagQuery.parse(this.gf.query).forEach((t: QueryTag, i: number) => {
+      out.push(new TagRowItem(t, i, this.nameCache.nameOf(t)))
+    })
+    return out
+  }
+
+  private setGlobalTagRelation(index: number, relation: number): void {
+    const tags: QueryTag[] = TagQuery.parse(this.gf.query)
+    if (index >= 0 && index < tags.length) {
+      tags[index].relation = relation
+      this.setGlobalQuery(TagQuery.serialize(tags))
+    }
+  }
+
+  private removeGlobalTag(index: number): void {
+    const tags: QueryTag[] = TagQuery.parse(this.gf.query)
+    if (index >= 0 && index < tags.length) {
+      tags.splice(index, 1)
+      this.setGlobalQuery(TagQuery.serialize(tags))
+    }
   }
 
   private favoriteRows(): Favcat[] {
@@ -165,6 +224,65 @@ export struct SearchFilterSheet {
           `search_favcat_${index}_${fc.favId}_${fc.favTitle}`.replace(/[^A-Za-z0-9_]/g, '_'),
       )
     }
+  }
+
+  // Global-filter tag rows need ListItem semantics (swipe-to-delete), so they render as a
+  // GroupedListItemSection inside the scaffold List — the same composer-in-header wiring the
+  // custom-tab editor (TabEditPage) uses, which keeps the composer stable while rows change.
+  @Builder
+  private GlobalFilterHeader() {
+    Column() {
+      Text($r('app.string.global_filter_title'))
+        .fontSize(ThemeConstants.FONT_SIZE_BODY)
+        .fontColor($r('sys.color.font_secondary'))
+      TagQueryComposer({
+        query: this.gf.query,
+        onQueryChange: (q: string) => {
+          this.setGlobalQuery(q)
+        },
+      })
+    }
+    .width('100%')
+    .alignItems(HorizontalAlign.Start)
+  }
+
+  @Builder
+  private GlobalFilterItems() {
+    ForEach(
+      this.globalTagRowItems(),
+      (it: TagRowItem) => {
+        ListItem() {
+          Column() {
+            ListRowDivider()
+            TagRow({
+              tag: it.tag,
+              index: it.index,
+              displayName: it.displayName,
+              onSetRelation: (index: number, rel: number) => {
+                this.setGlobalTagRelation(index, rel)
+              },
+            })
+          }
+          .width('100%')
+        }
+        .swipeAction({
+          end: () => {
+            this.GlobalDeleteSwipe(it.index)
+          },
+        })
+      },
+      (it: TagRowItem, index: number) =>
+        `gf_tag_${index}_${it.tag.relation}_${it.tag.namespace}_${it.tag.text}_${it.displayName}`.replace(/[^A-Za-z0-9_]/g, '_'),
+    )
+  }
+
+  @Builder
+  private GlobalDeleteSwipe(index: number) {
+    SwipeDeleteAction({
+      action: () => {
+        this.removeGlobalTag(index)
+      },
+    })
   }
 
   build() {
@@ -235,6 +353,33 @@ export struct SearchFilterSheet {
           right: ThemeConstants.SPACE_SM,
           top: ThemeConstants.SPACE_SM,
           bottom: ThemeConstants.SPACE_SM,
+        })
+      }
+      if (this.session.scope === SEARCH_SCOPE_GALLERY) {
+        // Global filter (gallery scope only). Both the switch card and the tag group sit at the
+        // scaffold List's padding edge — the same ListItem/ListItemGroup card convention as
+        // TabEditPage and MyTagsPage — so the two new cards stay mutually aligned.
+        ListItem() {
+          GroupedListSection() {
+            ConciseListRow({
+              title: $r('app.string.global_filter_master_switch'),
+              hasSwitch: true,
+              checked: this.gf.enabled,
+              showChevron: false,
+              switchAction: (value: boolean) => {
+                this.setGlobalEnabled(value)
+              },
+            })
+          }
+        }
+        GroupedListItemSection({
+          showHeader: true,
+          headerBuilder: () => {
+            this.GlobalFilterHeader()
+          },
+          content: () => {
+            this.GlobalFilterItems()
+          },
         })
       }
     }

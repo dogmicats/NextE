@@ -131,6 +131,7 @@ import {
   ReaderSuperResolutionModelsPage,
   DownloadSettingsPage,
   SearchSettingsPage,
+  GlobalSearchFilterPage,
   LocalBlockSettingsPage,
   ImageBlockSettingsPage,
   TagTranslationSettingsPage,
@@ -471,6 +472,11 @@ function IndexDownloadSettingsRoute() {
 @Builder
 function IndexSearchSettingsRoute() {
   SearchSettingsPage()
+}
+
+@Builder
+function IndexGlobalSearchFilterRoute() {
+  GlobalSearchFilterPage()
 }
 
 @Builder
@@ -1240,6 +1246,7 @@ struct Index {
     'readerSuperResolutionModels': wrapBuilder<[]>(IndexReaderSuperResolutionModelsRoute),
     'downloadSettings': wrapBuilder<[]>(IndexDownloadSettingsRoute),
     'searchSettings': wrapBuilder<[]>(IndexSearchSettingsRoute),
+    'globalSearchFilter': wrapBuilder<[]>(IndexGlobalSearchFilterRoute),
     'localBlockSettings': wrapBuilder<[]>(IndexLocalBlockSettingsRoute),
     'imageBlockSettings': wrapBuilder<[]>(IndexImageBlockSettingsRoute),
     'tagTranslationSettings': wrapBuilder<[]>(IndexTagTranslationSettingsRoute),

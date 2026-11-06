@@ -9,12 +9,14 @@ import {
   SearchFilterState,
   SearchHistorySettings,
   SearchHistoryState,
+  GlobalSearchFilterState,
   ThemeConstants,
   ListRowDivider,
   connectNavStack,
   NavStackHolder,
   connectSearchFilter,
   connectSearchHistory,
+  connectGlobalSearchFilter,
   immersiveTitleBar,
 } from 'shared'
 
@@ -26,6 +28,7 @@ import {
 export struct SearchSettingsPage {
   @Local history: SearchHistoryState = connectSearchHistory();
   @Local filter: SearchFilterState = connectSearchFilter();
+  @Local globalFilter: GlobalSearchFilterState = connectGlobalSearchFilter();
   @Local navStackHolder: NavStackHolder = connectNavStack();
   @Local isFirstSecondaryDestination: boolean = false;
   private stack: NavPathStack = connectNavStack().stack;
@@ -43,6 +46,21 @@ export struct SearchSettingsPage {
     return this.filter.isActive()
       ? $r('app.string.search_settings_filter_active')
       : $r('app.string.search_settings_filter_clean')
+  }
+
+  // D11 derivation: empty query counts as unconfigured regardless of the switch; otherwise the
+  // switch decides enabled/disabled. Derived live from enabled + query, never persisted.
+  private globalFilterStatusText(): Resource {
+    if (this.globalFilter.tagCount() === 0) {
+      return $r('app.string.global_filter_status_unconfigured')
+    }
+    return this.globalFilter.enabled
+      ? $r('app.string.global_filter_status_enabled')
+      : $r('app.string.global_filter_status_disabled')
+  }
+
+  private globalFilterCountText(): string {
+    return `${this.globalFilter.tagCount()}`
   }
 
   private async clearHistory(): Promise<void> {
@@ -137,6 +155,25 @@ export struct SearchSettingsPage {
               showChevron: false,
               action: () => {
                 this.confirmResetFilters()
+              },
+            })
+          }
+        }
+        ListItem() {
+          GroupedListSection() {
+            ConciseListRow({
+              title: $r('app.string.global_filter_title'),
+              subtitle: this.globalFilterStatusText(),
+              leadingIcon: $r('sys.symbol.funnel'),
+              trailingText: this.globalFilterCountText(),
+              showChevron: false,
+            })
+            ListRowDivider()
+            ConciseListRow({
+              title: $r('app.string.global_filter_hint'),
+              leadingIcon: $r('sys.symbol.slider_horizontal_2'),
+              action: () => {
+                this.stack.pushPathByName('GlobalSearchFilter', null)
               },
             })
           }

@@ -58,6 +58,7 @@ Allowed `Sync` values:
 | StorageKeys.SEARCH_HISTORY | legacy-local-data | excluded | excluded | RDB source is `search_history` |
 | StorageKeys.SEARCH_HISTORY_TRANSLATE | setting | plaintext | excluded | Search-history translation preference |
 | StorageKeys.SEARCH_FILTER | setting | plaintext | excluded | Advanced-search filter snapshot |
+| StorageKeys.GLOBAL_SEARCH_FILTER | setting | plaintext | excluded | Global advanced-search filter (master switch + AND/OR/NOT tag query) |
 | StorageKeys.FAVORITES_FAVCATS | legacy-local-data | excluded | excluded | Favcat selector snapshot, not primary local data |
 | StorageKeys.LOCAL_FAVORITES | legacy-local-data | excluded | excluded | RDB source is `local_favorites` |
 | StorageKeys.VIEWED_HISTORY | legacy-local-data | excluded | excluded | RDB source is `viewed_history` |

@@ -152,6 +152,60 @@ export class TagQuery {
 }
 
 /**
+ * Shared translation-name cache for tag rows rendered outside TabEditPage (the search filter sheet's
+ * global-filter section and the settings GlobalSearchFilterPage). Both surfaces render TagRow lists
+ * from a TagQuery string but cannot reuse TabEditPage's private `trans` map, so this class extracts
+ * that exact ensureTranslations pattern: `ensure` resolves best-effort translated display names
+ * through the local translation DB (skipping already-cached keys; a failed lookup keeps the raw
+ * token display), `nameOf` reads the cache. @ObservedV2 + @Trace names lets a host-held instance
+ * refresh the rows when async translations land.
+ */
+@ObservedV2
+export class TagQueryRowNameCache {
+  @Trace names: Map<string, string> = new Map<string, string>()
+
+  /** Best-effort translate every namespaced tag of `query`; skips cached keys; no-op when tag translation is off. */
+  async ensure(context: common.UIAbilityContext, query: string): Promise<void> {
+    if (!connectTagTranslationSettings().enabled) {
+      return
+    }
+    const tags: QueryTag[] = TagQuery.parse(query)
+    const next: Map<string, string> = new Map<string, string>()
+    this.names.forEach((v: string, k: string) => next.set(k, v))
+    let changed: boolean = false
+    for (let i = 0; i < tags.length; i++) {
+      const t: QueryTag = tags[i]
+      if (t.namespace.length === 0) {
+        continue
+      }
+      const key: string = TagQuery.keyOf(t)
+      if (next.has(key)) {
+        continue
+      }
+      try {
+        const full: string = `${t.namespace}:${t.text}`
+        const name: string = await TagTranslationService.translateFullTagAsync(context, full)
+        if (name.length > 0 && name !== full && name !== t.text) {
+          next.set(key, name)
+          changed = true
+        }
+      } catch (err) {
+        // Translation is best-effort; the raw token still shows.
+      }
+    }
+    if (changed) {
+      this.names = next
+    }
+  }
+
+  /** Cached display name for a tag ('' when unknown — TagRow falls back to the raw token). */
+  nameOf(t: QueryTag): string {
+    const name: string | undefined = this.names.get(TagQuery.keyOf(t))
+    return name !== undefined ? name : ''
+  }
+}
+
+/**
  * The "add tags" control: a keyboard-stable search field that suggests tags (local translation DB + EH
  * /api.php tagsuggest); tapping a suggestion (or submitting free text) appends a tag to the query string.
  * It does NOT render the added tags — the host page renders those as swipe-deletable rows in its own List

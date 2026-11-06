@@ -12,6 +12,7 @@ import {
   connectCustomProfiles,
   CustomProfilesState,
   CustomProfile,
+  PROFILE_TYPE_GALLERY,
   SafeModeState,
   connectSafeMode,
   DiagnosticLogger,
@@ -19,6 +20,8 @@ import {
   connectHomeSource,
   GalleryDetailBackToTopState,
   connectGalleryDetailBackToTop,
+  GlobalSearchFilterState,
+  connectGlobalSearchFilter,
 } from 'shared'
 import { GalleryListViewModel } from '../viewmodel/GalleryListViewModel'
 import { GalleryListBody } from './GalleryListBody'
@@ -54,6 +57,8 @@ export struct GallerySourcePage {
   @Local safeMode: SafeModeState = connectSafeMode();
   @Local homeSource: HomeSourceState = connectHomeSource();
   @Local galleryDetailBackToTop: GalleryDetailBackToTopState = connectGalleryDetailBackToTop();
+  // Global advanced-search filter: gallery-type tabs merge it into f_search and refetch on change.
+  @Local globalFilter: GlobalSearchFilterState = connectGlobalSearchFilter();
   // Per-tab display-mode override passed to the list body ('global' = follow the shared ListModeState).
   @Local displayMode: string = 'global';
   // First-load guard: load once on first activation; later activations reuse the retained list.
@@ -142,6 +147,26 @@ export struct GallerySourcePage {
   onActiveChange(): void {
     if (this.isActive()) {
       this.loadOnce()
+    }
+  }
+
+  // A global-filter edit changes the merged f_search of gallery-type profiles (and their cache key),
+  // so an already-loaded gallery tab refetches with the new combination; watched/favorite/popular/
+  // toplist tabs never merge the filter and keep their lists (FR-004). An unvisited gallery tab loads
+  // naturally on first activation with the filter already applied.
+  @Monitor('globalFilter.applySeq')
+  onGlobalFilterChange(): void {
+    const profile: CustomProfile | null = this.profilesState.findByUuid(this.sourceKey)
+    if (profile === null || profile.listType !== PROFILE_TYPE_GALLERY) {
+      return
+    }
+    if (this.loadedOnce) {
+      DiagnosticLogger.info(
+        'home-list-anchor',
+        'source_global_filter_reload',
+        `sourceKey=${this.sourceKey} vm=${this.vm.debugState()}`,
+      )
+      this.vm.reload(true)
     }
   }
 

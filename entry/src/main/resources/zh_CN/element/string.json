@@ -3613,6 +3613,30 @@
       "value": "禁用标签过滤"
     },
     {
+      "name": "global_filter_title",
+      "value": "全局搜索过滤"
+    },
+    {
+      "name": "global_filter_master_switch",
+      "value": "启用全局过滤"
+    },
+    {
+      "name": "global_filter_status_unconfigured",
+      "value": "未配置"
+    },
+    {
+      "name": "global_filter_status_enabled",
+      "value": "已启用"
+    },
+    {
+      "name": "global_filter_status_disabled",
+      "value": "已停用"
+    },
+    {
+      "name": "global_filter_hint",
+      "value": "配置"
+    },
+    {
       "name": "fav_order_fav",
       "value": "收藏时间"
     },

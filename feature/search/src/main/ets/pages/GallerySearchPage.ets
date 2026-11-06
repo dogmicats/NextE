@@ -54,6 +54,9 @@ import {
   UserTagSignal,
   SearchHistorySettings,
   SearchFilterSettings,
+  GlobalSearchFilterState,
+  connectGlobalSearchFilter,
+  GlobalSearchFilterSettings,
   connectLayoutSafeArea,
   LayoutSafeAreaState,
   Favcat,
@@ -93,6 +96,7 @@ const SEARCH_HISTORY_CHIP_ANIM_DURATION: number = 180
 export struct GallerySearchPage {
   @Local vm: SearchViewModel = new SearchViewModel();
   @Local filter: SearchFilterState = connectSearchFilter();
+  @Local globalFilter: GlobalSearchFilterState = connectGlobalSearchFilter();
   @Local session: SearchSessionState = new SearchSessionState();
   @Local listMode: ListModeState = connectListMode();
   @Local history: SearchHistoryState = connectSearchHistory();
@@ -865,6 +869,17 @@ export struct GallerySearchPage {
     // Persist live filter edits so they survive a restart (eros_fe keeps the advanced-search profile).
     SearchFilterSettings.persist(this.ctx())
     this.vm.setScope(this.session.scope, this.session.favoriteFavcat)
+    if (this.fieldState.keyword.trim().length > 0) {
+      this.vm.reapplyFilters()
+    }
+  }
+
+  @Monitor('globalFilter.applySeq')
+  onGlobalFilterApply(): void {
+    // Global-filter edits from any surface (this page's filter sheet or the settings editor) persist
+    // here and re-run an existing submitted search; buildQuery merges the latest filter at request
+    // time while the field and search history keep the raw keyword.
+    GlobalSearchFilterSettings.persist(this.ctx())
     if (this.fieldState.keyword.trim().length > 0) {
       this.vm.reapplyFilters()
     }

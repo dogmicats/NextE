@@ -28,6 +28,7 @@ export type IndexDestinationFamily =
   'readerSuperResolutionModels' |
   'downloadSettings' |
   'searchSettings' |
+  'globalSearchFilter' |
   'localBlockSettings' |
   'imageBlockSettings' |
   'tagTranslationSettings' |
@@ -80,6 +81,7 @@ export class IndexRouteCoordinator {
     'ReaderSuperResolutionModels': 'readerSuperResolutionModels',
     'DownloadSettings': 'downloadSettings',
     'SearchSettings': 'searchSettings',
+    'GlobalSearchFilter': 'globalSearchFilter',
     'LocalBlockSettings': 'localBlockSettings',
     'ImageBlockSettings': 'imageBlockSettings',
     'TagTranslationSettings': 'tagTranslationSettings',

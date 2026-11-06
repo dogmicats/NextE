@@ -198,7 +198,7 @@ export { PageJumpDialogContent } from './components/PageJumpDialogContent'
 export { AppIconButton } from './components/AppIconButton'
 export { CategorySelector } from './components/CategorySelector'
 export { AdvancedSearchControls } from './components/AdvancedSearchControls'
-export { TagQueryComposer, TagRow, TagQuery, QueryTag, TagRowItem, TagRelation } from './components/TagQueryComposer'
+export { TagQueryComposer, TagRow, TagQuery, QueryTag, TagRowItem, TagRelation, TagQueryRowNameCache } from './components/TagQueryComposer'
 export { SectionHeader } from './components/SectionHeader'
 export { MarkdownContent } from './components/MarkdownContent'
 export { ReleaseNotesPager } from './components/ReleaseNotesPager'
@@ -1123,6 +1123,11 @@ export {
   SEARCH_SCOPE_WATCHED,
   SEARCH_SCOPE_FAVORITE,
 } from './state/SearchFilterState'
+export {
+  GlobalSearchFilterState,
+  connectGlobalSearchFilter,
+  globalSearchFilterCacheRevision,
+} from './state/GlobalSearchFilterState'
 export { AuthState, connectAuth } from './state/AuthState'
 export { SafeModeState, connectSafeMode } from './state/SafeModeState'
 export { AccountListState, connectAccountList } from './state/AccountListState'
@@ -1246,6 +1251,7 @@ export {
   SearchFilterSettings,
   SearchFilterSnapshot,
 } from './settings/SearchFilterSettings'
+export { GlobalSearchFilterSettings } from './settings/GlobalSearchFilterSettings'
 export { FavcatListSettings } from './settings/FavcatListSettings'
 export { LocalFavSettings } from './settings/LocalFavSettings'
 export { GalleryReadProgressSettings } from './settings/GalleryReadProgressSettings'

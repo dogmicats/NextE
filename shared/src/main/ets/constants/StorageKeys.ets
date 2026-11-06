@@ -43,6 +43,7 @@ export class StorageKeys {
   static readonly SEARCH_HISTORY: string = 'search.history' // legacy Preferences key; RDB source of truth
   static readonly SEARCH_HISTORY_TRANSLATE: string = 'search.history.translate'
   static readonly SEARCH_FILTER: string = 'search.filter' // JSON snapshot of advanced-search filters
+  static readonly GLOBAL_SEARCH_FILTER: string = 'search.globalFilter' // JSON snapshot of the global advanced-search filter
   static readonly FAVORITES_FAVCATS: string = 'favorites.favcats' // JSON [Favcat] selector snapshot
   static readonly LOCAL_FAVORITES: string = 'favorites.local' // legacy Preferences key; RDB source of truth
   static readonly VIEWED_HISTORY: string = 'viewed.history' // legacy Preferences key; RDB source of truth

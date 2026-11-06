@@ -17,6 +17,7 @@ import {
   connectSiteMode,
   connectSearchFilter,
   SearchFilterState,
+  connectGlobalSearchFilter,
   SEARCH_SCOPE_FAVORITE,
   SEARCH_SCOPE_GALLERY,
   SEARCH_SCOPE_WATCHED,
@@ -200,7 +201,12 @@ export class SearchViewModel {
       tl: 0,
       page: 0,
       fCats: f.fCats(),
-      search: this.query,
+      // Gallery scope merges the global filter at request-build time only: this.query keeps the raw
+      // keyword, so the input field and search history never see the merged form. Watched requests
+      // share this builder but stay unmerged per the feature's scope rules.
+      search: this.scope === SEARCH_SCOPE_GALLERY
+        ? connectGlobalSearchFilter().mergedQuery(this.query)
+        : this.query,
       advancedEnabled: f.advancedEnabled,
       minRating: f.minRating,
       pagesFrom: f.pagesFrom,

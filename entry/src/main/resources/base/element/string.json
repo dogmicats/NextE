@@ -3613,6 +3613,30 @@
       "value": "Disable tag filter"
     },
     {
+      "name": "global_filter_title",
+      "value": "Global search filter"
+    },
+    {
+      "name": "global_filter_master_switch",
+      "value": "Enable global filter"
+    },
+    {
+      "name": "global_filter_status_unconfigured",
+      "value": "Not configured"
+    },
+    {
+      "name": "global_filter_status_enabled",
+      "value": "Enabled"
+    },
+    {
+      "name": "global_filter_status_disabled",
+      "value": "Disabled"
+    },
+    {
+      "name": "global_filter_hint",
+      "value": "Configure"
+    },
+    {
       "name": "fav_order_fav",
       "value": "By favorited"
     },

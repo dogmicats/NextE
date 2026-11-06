@@ -3613,6 +3613,30 @@
       "value": "タグフィルタ無効"
     },
     {
+      "name": "global_filter_title",
+      "value": "グローバル検索フィルター"
+    },
+    {
+      "name": "global_filter_master_switch",
+      "value": "グローバルフィルターを有効化"
+    },
+    {
+      "name": "global_filter_status_unconfigured",
+      "value": "未設定"
+    },
+    {
+      "name": "global_filter_status_enabled",
+      "value": "有効"
+    },
+    {
+      "name": "global_filter_status_disabled",
+      "value": "無効"
+    },
+    {
+      "name": "global_filter_hint",
+      "value": "構成"
+    },
+    {
       "name": "fav_order_fav",
       "value": "お気に入り順"
     },

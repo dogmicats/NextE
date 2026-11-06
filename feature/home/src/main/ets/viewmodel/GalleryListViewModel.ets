@@ -16,12 +16,15 @@ import {
   EhErrorText,
   EhPageCacheService,
   connectToplistFilter,
+  connectGlobalSearchFilter,
+  globalSearchFilterCacheRevision,
   LocalBlockService,
   CustomProfile,
   PROFILE_TYPE_POPULAR,
   PROFILE_TYPE_WATCHED,
   PROFILE_TYPE_TOPLIST,
   PROFILE_TYPE_FAVORITE,
+  PROFILE_TYPE_GALLERY,
   SafeModeGate,
   SAFE_MODE_NON_H_CATEGORY,
   SAFE_MODE_NON_H_EXCLUDED_CATS,
@@ -262,7 +265,13 @@ export class GalleryListViewModel {
       fCats: SafeModeGate.restricted()
         ? SAFE_MODE_NON_H_EXCLUDED_CATS
         : (useProfile ? p!.fCats() : 0),
-      search: useProfile ? p!.searchText : '',
+      // Gallery-type profiles merge the global advanced-search filter into f_search at request
+      // time (D5): the profile's own words stay byte-for-byte, the filter combination is appended,
+      // and a keyword-less profile browses with the filter alone. Other profile types keep the
+      // raw profile search so watched/favorite/popular/toplist requests are untouched (FR-004).
+      search: useProfile && p!.listType === PROFILE_TYPE_GALLERY
+        ? connectGlobalSearchFilter().mergedQuery(p!.searchText)
+        : (useProfile ? p!.searchText : ''),
       advancedEnabled: useProfile ? p!.advancedEnabled : false,
       minRating: useProfile ? p!.minRating : 0,
       pagesFrom: useProfile ? p!.pagesFrom : 0,
@@ -280,10 +289,14 @@ export class GalleryListViewModel {
 
   private cacheKey(): string {
     if (this.profileUuid.length > 0) {
+      // D4: the revision extends the profile's content revision with the active global filter, so
+      // filtered and unfiltered first pages never share a cache entry; non-gallery profiles and an
+      // inactive filter keep the plain revision — identical to the pre-feature key (SC-004).
+      const p: CustomProfile | null = this.profile
       return EhPageCacheService.homeProfileKey(
         connectSiteMode().isEx,
         this.safeModeCacheScope(this.profileUuid),
-        this.profileContentRevision(),
+        p !== null ? globalSearchFilterCacheRevision(p) : this.profileContentRevision(),
       )
     }
     return EhPageCacheService.homeListKey(
