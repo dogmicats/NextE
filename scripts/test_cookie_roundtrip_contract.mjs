@@ -26,7 +26,9 @@ import { fileURLToPath } from 'node:url'
 import { dirname, join } from 'node:path'
 
 const ROOT = join(dirname(fileURLToPath(import.meta.url)), '..')
-const src = (rel) => readFileSync(join(ROOT, rel), 'utf8')
+// Normalize CRLF so substring/regex source checks behave identically on LF (CI) and
+// Windows autocrlf checkouts; assertion semantics are unchanged.
+const src = (rel) => readFileSync(join(ROOT, rel), 'utf8').replace(/\r\n/g, '\n')
 
 // EhConstants cookie names (mirror of shared/.../constants/EhConstants.ets).
 const NW = 'nw'

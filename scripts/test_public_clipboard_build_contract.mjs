@@ -31,7 +31,12 @@ try {
     mkdirSync(dirname(target), { recursive: true })
     cpSync(join(root, relative), target)
   }
-  const result = spawnSync('python3', [join(root, scriptPath), '--root', fixture], { encoding: 'utf8' })
+  // CI exposes python3; a Windows checkout may only have python (the Store python3 alias
+  // exits non-zero with no output), so fall back before failing the contract.
+  let result = spawnSync('python3', [join(root, scriptPath), '--root', fixture], { encoding: 'utf8' })
+  if (result.error !== undefined || (result.status !== null && result.status !== 0)) {
+    result = spawnSync('python', [join(root, scriptPath), '--root', fixture], { encoding: 'utf8' })
+  }
   ok(result.status === 0, `public clipboard preparation failed: ${result.stderr || result.stdout}`)
   const publicFlag = readFileSync(join(fixture, flagPath), 'utf8')
   const publicModule = readFileSync(join(fixture, modulePath), 'utf8')

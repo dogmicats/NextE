@@ -6,7 +6,13 @@ run_module() {
 }
 
 run_i18n() {
-  python3 scripts/check_i18n_duplicates.py
+  # CI provides python3; a Windows checkout may only have a working `python` (the Store
+  # python3 alias exits non-zero with no output), so probe before choosing the interpreter.
+  if python3 -c 'import sys' >/dev/null 2>&1; then
+    python3 scripts/check_i18n_duplicates.py
+  else
+    python scripts/check_i18n_duplicates.py
+  fi
 }
 
 run_v2() {
