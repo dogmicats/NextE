@@ -31,6 +31,19 @@ worktree、任务队列或某次验证快照。所有易变化事实都必须实
   启动和功能验证。需要本地运行时先完成非缓存构建并保留完整日志，再执行
   `python3 scripts/check_api_compatibility_warnings.py <构建日志>`。
 
+## Git 远程架构（fork 镜像）
+
+- `origin` = `dogmicats/NextE`（本项目 fork，只向它推送），`upstream` = `erosTeam/NextE`
+  （原作者，只读）。任何推送不得指向 `upstream`。
+- `main` 是 upstream `main` 的纯镜像，自有功能一律不落在 `main`。本地 `main` 跟踪
+  `upstream/main`，`branch.main.pushRemote = origin`：`main` 上 `git pull` 来自 upstream，
+  `git push` 落到 fork。
+- 同步镜像与 tag 用 `bash scripts/sync_fork_main.sh`（fast-forward only，拒绝分叉；Git Bash
+  运行）。镜像推送的是 upstream 已通过其 CI 的提交，不产生自有提交，不适用推送前 preflight
+  门禁；推送自有分支仍必须先跑 preflight。
+- 自有功能在 feature 分支开发并推送到 `origin`。吸收 upstream 变更：先同步镜像，再在分支上
+  `git merge main`；不从 feature 分支向 `main` 反向合并或 cherry-pick。
+
 ## 设备
 
 - 设备地址和连接状态不写入本文件。按 [AGENTS.md](../../AGENTS.md) 用实时
