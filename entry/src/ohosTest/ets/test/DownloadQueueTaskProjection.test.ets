@@ -4,6 +4,7 @@ import {
   DownloadArchiverTask,
   DownloadGalleryTask,
   DownloadGalleryTaskStatus,
+  DownloadImageSeed,
   DownloadSortMode,
 } from 'shared'
 
@@ -35,6 +36,12 @@ function archiverTask(
   task.status = status
   task.queuedAt = queuedAt
   return task
+}
+
+function seedWithBytes(bytes: number): DownloadImageSeed {
+  const seed: DownloadImageSeed = new DownloadImageSeed()
+  seed.bytesWritten = bytes
+  return seed
 }
 
 export default function downloadQueueTaskProjectionTest(): void {
@@ -140,6 +147,107 @@ export default function downloadQueueTaskProjectionTest(): void {
       expect(archiverSearch.galleryVisibleCount).assertEqual(0)
       expect(archiverSearch.archiverVisibleCount).assertEqual(1)
       expect(archiverSearch.archiverTasksForGroup(0)[0].tag).assertEqual('archive')
+      done()
+    })
+
+    it('orders publish-time sorts with an added-time fallback for tasks without publish time', 0, (done: Function) => {
+      const oldPosted: DownloadGalleryTask = galleryTask('old-posted', 'Old Posted', DownloadGalleryTaskStatus.QUEUED, 50)
+      oldPosted.postedAt = 1000
+      const newPosted: DownloadGalleryTask = galleryTask('new-posted', 'New Posted', DownloadGalleryTaskStatus.QUEUED, 60)
+      newPosted.postedAt = 4000
+      const legacy: DownloadGalleryTask = galleryTask('legacy', 'Legacy', DownloadGalleryTaskStatus.QUEUED, 2000)
+
+      const postedDesc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [legacy, oldPosted, newPosted],
+        [],
+        '',
+        DownloadSortMode.POSTED_DESC,
+      )
+      const postedAsc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [legacy, oldPosted, newPosted],
+        [],
+        '',
+        DownloadSortMode.POSTED_ASC,
+      )
+
+      expect(postedDesc.galleryTasksForGroup(0).map((task: DownloadGalleryTask): string => task.gid).join(','))
+        .assertEqual('new-posted,legacy,old-posted')
+      expect(postedAsc.galleryTasksForGroup(0).map((task: DownloadGalleryTask): string => task.gid).join(','))
+        .assertEqual('old-posted,legacy,new-posted')
+
+      const archiverOld: DownloadArchiverTask = archiverTask('arch-old', 'Archive Old', DownloadGalleryTaskStatus.QUEUED, 70)
+      archiverOld.postedAt = 1200
+      const archiverNew: DownloadArchiverTask = archiverTask('arch-new', 'Archive New', DownloadGalleryTaskStatus.QUEUED, 80)
+      archiverNew.postedAt = 4200
+      const archiverPostedDesc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [],
+        [archiverOld, archiverNew],
+        '',
+        DownloadSortMode.POSTED_DESC,
+      )
+      const archiverPostedAsc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [],
+        [archiverOld, archiverNew],
+        '',
+        DownloadSortMode.POSTED_ASC,
+      )
+
+      expect(archiverPostedDesc.archiverTasksForGroup(0).map((task: DownloadArchiverTask): string => task.tag).join(','))
+        .assertEqual('arch-new,arch-old')
+      expect(archiverPostedAsc.archiverTasksForGroup(0).map((task: DownloadArchiverTask): string => task.tag).join(','))
+        .assertEqual('arch-old,arch-new')
+      done()
+    })
+
+    it('orders size sorts by persisted bytes with an added-time tie-break', 0, (done: Function) => {
+      const small: DownloadGalleryTask = galleryTask('small', 'Small', DownloadGalleryTaskStatus.QUEUED, 10)
+      small.imageSeeds = [seedWithBytes(100), seedWithBytes(200)]
+      const large: DownloadGalleryTask = galleryTask('large', 'Large', DownloadGalleryTaskStatus.QUEUED, 20)
+      large.imageSeeds = [seedWithBytes(900), seedWithBytes(800)]
+      const sameOlder: DownloadGalleryTask = galleryTask('same-older', 'Same Older', DownloadGalleryTaskStatus.QUEUED, 30)
+      sameOlder.imageSeeds = [seedWithBytes(500)]
+      const sameNewer: DownloadGalleryTask = galleryTask('same-newer', 'Same Newer', DownloadGalleryTaskStatus.QUEUED, 40)
+      sameNewer.imageSeeds = [seedWithBytes(500)]
+
+      const sizeDesc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [small, sameNewer, large, sameOlder],
+        [],
+        '',
+        DownloadSortMode.SIZE_DESC,
+      )
+      const sizeAsc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [small, sameNewer, large, sameOlder],
+        [],
+        '',
+        DownloadSortMode.SIZE_ASC,
+      )
+
+      expect(sizeDesc.galleryTasksForGroup(0).map((task: DownloadGalleryTask): string => task.gid).join(','))
+        .assertEqual('large,same-newer,same-older,small')
+      expect(sizeAsc.galleryTasksForGroup(0).map((task: DownloadGalleryTask): string => task.gid).join(','))
+        .assertEqual('small,same-newer,same-older,large')
+
+      const archiverSmall: DownloadArchiverTask = archiverTask('arch-small', 'Archive Small', DownloadGalleryTaskStatus.QUEUED, 90)
+      archiverSmall.bytesWritten = 250
+      const archiverLarge: DownloadArchiverTask = archiverTask('arch-large', 'Archive Large', DownloadGalleryTaskStatus.QUEUED, 95)
+      archiverLarge.bytesWritten = 950
+      const archiverSizeDesc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [],
+        [archiverSmall, archiverLarge],
+        '',
+        DownloadSortMode.SIZE_DESC,
+      )
+      const archiverSizeAsc: DownloadQueueTaskProjection = DownloadQueueTaskProjection.build(
+        [],
+        [archiverSmall, archiverLarge],
+        '',
+        DownloadSortMode.SIZE_ASC,
+      )
+
+      expect(archiverSizeDesc.archiverTasksForGroup(0).map((task: DownloadArchiverTask): string => task.tag).join(','))
+        .assertEqual('arch-large,arch-small')
+      expect(archiverSizeAsc.archiverTasksForGroup(0).map((task: DownloadArchiverTask): string => task.tag).join(','))
+        .assertEqual('arch-small,arch-large')
       done()
     })
   })

@@ -113,12 +113,32 @@
       "value": "追加日時 古い順"
     },
     {
+      "name": "download_sort_posted_desc",
+      "value": "投稿日が新しい順"
+    },
+    {
+      "name": "download_sort_posted_asc",
+      "value": "投稿日が古い順"
+    },
+    {
       "name": "download_sort_title_asc",
       "value": "タイトル A-Z"
     },
     {
       "name": "download_sort_title_desc",
       "value": "タイトル Z-A"
+    },
+    {
+      "name": "download_sort_size_desc",
+      "value": "サイズが大きい順"
+    },
+    {
+      "name": "download_sort_size_asc",
+      "value": "サイズが小さい順"
+    },
+    {
+      "name": "download_storage_usage_summary",
+      "value": "ダウンロード容量：%1$s · ギャラリー：%2$s · アーカイブ：%3$s"
     },
     {
       "name": "download_group_active",

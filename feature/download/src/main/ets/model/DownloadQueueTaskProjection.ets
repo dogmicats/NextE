@@ -128,6 +128,28 @@ export class DownloadQueueTaskProjection {
         true,
       )
     }
+    if (sortMode === DownloadSortMode.POSTED_DESC || sortMode === DownloadSortMode.POSTED_ASC) {
+      return DownloadQueueTaskProjection.compareValueThenAddedDesc(
+        DownloadQueueTaskProjection.effectiveGalleryPostedAt(a),
+        DownloadQueueTaskProjection.effectiveGalleryPostedAt(b),
+        a.queuedAt,
+        b.queuedAt,
+        DownloadQueueTaskProjection.galleryTaskKey(a),
+        DownloadQueueTaskProjection.galleryTaskKey(b),
+        sortMode === DownloadSortMode.POSTED_ASC,
+      )
+    }
+    if (sortMode === DownloadSortMode.SIZE_DESC || sortMode === DownloadSortMode.SIZE_ASC) {
+      return DownloadQueueTaskProjection.compareValueThenAddedDesc(
+        a.downloadedBytes(),
+        b.downloadedBytes(),
+        a.queuedAt,
+        b.queuedAt,
+        DownloadQueueTaskProjection.galleryTaskKey(a),
+        DownloadQueueTaskProjection.galleryTaskKey(b),
+        sortMode === DownloadSortMode.SIZE_ASC,
+      )
+    }
     if (sortMode === DownloadSortMode.TITLE_ASC) {
       return DownloadQueueTaskProjection.compareTextThenTime(a.displayTitle(), b.displayTitle(), a.queuedAt, b.queuedAt, true)
     }
@@ -146,6 +168,28 @@ export class DownloadQueueTaskProjection {
   private static compareArchiverTasks(a: DownloadArchiverTask, b: DownloadArchiverTask, sortMode: string): number {
     if (sortMode === DownloadSortMode.ADDED_ASC) {
       return DownloadQueueTaskProjection.compareNumberThenKey(a.queuedAt, b.queuedAt, a.tag, b.tag, true)
+    }
+    if (sortMode === DownloadSortMode.POSTED_DESC || sortMode === DownloadSortMode.POSTED_ASC) {
+      return DownloadQueueTaskProjection.compareValueThenAddedDesc(
+        DownloadQueueTaskProjection.effectiveArchiverPostedAt(a),
+        DownloadQueueTaskProjection.effectiveArchiverPostedAt(b),
+        a.queuedAt,
+        b.queuedAt,
+        a.tag,
+        b.tag,
+        sortMode === DownloadSortMode.POSTED_ASC,
+      )
+    }
+    if (sortMode === DownloadSortMode.SIZE_DESC || sortMode === DownloadSortMode.SIZE_ASC) {
+      return DownloadQueueTaskProjection.compareValueThenAddedDesc(
+        a.bytesWritten,
+        b.bytesWritten,
+        a.queuedAt,
+        b.queuedAt,
+        a.tag,
+        b.tag,
+        sortMode === DownloadSortMode.SIZE_ASC,
+      )
     }
     if (sortMode === DownloadSortMode.TITLE_ASC) {
       return DownloadQueueTaskProjection.compareTextThenTime(a.displayTitle(), b.displayTitle(), a.queuedAt, b.queuedAt, true)
@@ -166,6 +210,31 @@ export class DownloadQueueTaskProjection {
       return asc ? 1 : -1
     }
     return DownloadQueueTaskProjection.compareNumberThenKey(aTime, bTime, aText, bText, false)
+  }
+
+  /** Publish-time sort falls back to the queue-add time when a task predates publish-time tracking. */
+  private static effectiveGalleryPostedAt(task: DownloadGalleryTask): number {
+    return task.postedAt > 0 ? task.postedAt : task.queuedAt
+  }
+
+  private static effectiveArchiverPostedAt(task: DownloadArchiverTask): number {
+    return task.postedAt > 0 ? task.postedAt : task.queuedAt
+  }
+
+  /** Primary metric ascending/descending, then added-time descending, then a stable key order. */
+  private static compareValueThenAddedDesc(
+    aValue: number,
+    bValue: number,
+    aQueuedAt: number,
+    bQueuedAt: number,
+    aKey: string,
+    bKey: string,
+    asc: boolean,
+  ): number {
+    if (aValue !== bValue) {
+      return asc ? aValue - bValue : bValue - aValue
+    }
+    return DownloadQueueTaskProjection.compareNumberThenKey(aQueuedAt, bQueuedAt, aKey, bKey, false)
   }
 
   private static compareNumberThenKey(

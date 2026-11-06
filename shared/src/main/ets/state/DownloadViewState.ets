@@ -8,8 +8,12 @@ export enum DownloadViewType {
 export class DownloadSortMode {
   static readonly ADDED_DESC: string = 'added_desc'
   static readonly ADDED_ASC: string = 'added_asc'
+  static readonly POSTED_DESC: string = 'posted_desc'
+  static readonly POSTED_ASC: string = 'posted_asc'
   static readonly TITLE_ASC: string = 'title_asc'
   static readonly TITLE_DESC: string = 'title_desc'
+  static readonly SIZE_DESC: string = 'size_desc'
+  static readonly SIZE_ASC: string = 'size_asc'
 }
 
 /**

@@ -58,6 +58,8 @@ export class DownloadGalleryTask {
   @Trace pageCount: number = 0
   @Trace category: string = ''
   @Trace uploader: string = ''
+  // EH gallery publish time in ms epoch, parsed from EhGallery.posted (Unix seconds string). 0 = unknown.
+  @Trace postedAt: number = 0
   @Trace upgradeFromGid: string = ''
   @Trace queuedAt: number = 0
   @Trace preparedAt: number = 0
@@ -85,6 +87,7 @@ export class DownloadGalleryTask {
     task.pageCount = gallery.fileCountNumber()
     task.category = gallery.category
     task.uploader = gallery.uploader
+    task.postedAt = DownloadGalleryTask.parsePostedAt(gallery.posted)
     task.upgradeFromGid = gallery.parentGid !== task.gid ? gallery.parentGid : ''
     task.queuedAt = Date.now()
     task.status = DownloadGalleryTaskStatus.QUEUED
@@ -110,6 +113,7 @@ export class DownloadGalleryTask {
     task.pageCount = this.pageCount
     task.category = this.category
     task.uploader = this.uploader
+    task.postedAt = this.postedAt
     task.upgradeFromGid = this.upgradeFromGid
     task.queuedAt = this.queuedAt
     task.preparedAt = this.preparedAt
@@ -139,6 +143,7 @@ export class DownloadGalleryTask {
     this.pageCount = source.pageCount
     this.category = source.category
     this.uploader = source.uploader
+    this.postedAt = source.postedAt
     this.upgradeFromGid = source.upgradeFromGid
     this.queuedAt = source.queuedAt
     this.preparedAt = source.preparedAt
@@ -231,6 +236,15 @@ export class DownloadGalleryTask {
     return `${this.downloadedCount()}`
   }
 
+  /** Sum of per-seed persisted bytes. Feeds the storage-usage summary and the size sort modes. */
+  downloadedBytes(): number {
+    let total: number = 0
+    for (let i: number = 0; i < this.imageSeeds.length; i++) {
+      total += this.imageSeeds[i].bytesWritten
+    }
+    return total
+  }
+
   activeDownloadRatio(): number {
     if (this.activeBytesWritten <= 0 || this.activeBytesTotal <= 0) {
       return 0
@@ -252,6 +266,18 @@ export class DownloadGalleryTask {
       }
     })
     return seeds
+  }
+
+  /** EhGallery.posted is a raw Unix-seconds string from the list/gdata payload; invalid values yield 0. */
+  static parsePostedAt(raw: string): number {
+    if (raw.length === 0) {
+      return 0
+    }
+    const seconds: number = Number.parseFloat(raw)
+    if (!Number.isFinite(seconds) || seconds <= 0) {
+      return 0
+    }
+    return Math.floor(seconds * 1000)
   }
 
   syncProgressCounts(): void {
@@ -295,6 +321,8 @@ export class DownloadArchiverTask {
   @Trace thumbUrl: string = ''
   @Trace imgWidth: number = 0
   @Trace imgHeight: number = 0
+  // Inherited from the source gallery's EhGallery.posted (ms epoch) when the task is enqueued. 0 = unknown.
+  @Trace postedAt: number = 0
   @Trace dltype: string = ''
   @Trace resolution: string = ''
   @Trace parseSource: string = DownloadArchiverParseSource.OFFICIAL
@@ -318,6 +346,7 @@ export class DownloadArchiverTask {
     task.thumbUrl = this.thumbUrl
     task.imgWidth = this.imgWidth
     task.imgHeight = this.imgHeight
+    task.postedAt = this.postedAt
     task.dltype = this.dltype
     task.resolution = this.resolution
     task.parseSource = this.parseSource
@@ -342,6 +371,7 @@ export class DownloadArchiverTask {
     this.thumbUrl = source.thumbUrl
     this.imgWidth = source.imgWidth
     this.imgHeight = source.imgHeight
+    this.postedAt = source.postedAt
     this.dltype = source.dltype
     this.resolution = source.resolution
     this.parseSource = source.parseSource

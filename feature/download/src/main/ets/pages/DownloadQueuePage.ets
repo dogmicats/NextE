@@ -62,6 +62,8 @@ export struct DownloadQueuePage {
   @Local archiverTaskGroups: DownloadArchiverTask[][] = [[], [], [], []];
   @Local galleryVisibleTaskCount: number = 0;
   @Local archiverVisibleTaskCount: number = 0;
+  @Local galleryTotalBytes: number = 0;
+  @Local archiverTotalBytes: number = 0;
   @Local openingArchiverTag: string = '';
   @Local refreshingGalleryKey: string = '';
   @Local actionMenuKey: string = '';
@@ -368,8 +370,23 @@ export struct DownloadQueuePage {
     this.archiverTaskGroups = projection.archiverGroups
     this.galleryVisibleTaskCount = projection.galleryVisibleCount
     this.archiverVisibleTaskCount = projection.archiverVisibleCount
+    this.recomputeStorageUsage()
     this.publishSelection()
     this.syncPinnedTaskGroup(this.downloadView.viewType)
+  }
+
+  /** Totals derive from the full queues, not the filtered projection: the summary stays stable while searching. */
+  private recomputeStorageUsage(): void {
+    let galleryBytes: number = 0
+    this.downloadQueue.galleryTasks.forEach((task: DownloadGalleryTask) => {
+      galleryBytes += task.downloadedBytes()
+    })
+    let archiverBytes: number = 0
+    this.downloadQueue.archiverTasks.forEach((task: DownloadArchiverTask) => {
+      archiverBytes += task.bytesWritten
+    })
+    this.galleryTotalBytes = galleryBytes
+    this.archiverTotalBytes = archiverBytes
   }
 
   private visibleGroupIds(viewType: string): number[] {
@@ -549,6 +566,10 @@ export struct DownloadQueuePage {
     if (task.category.length > 0) {
       parts.push(task.category)
     }
+    const bytes: string = this.byteSizeText(task.downloadedBytes())
+    if (bytes.length > 0) {
+      parts.push(bytes)
+    }
     return parts.join(' · ')
   }
 
@@ -610,6 +631,22 @@ export struct DownloadQueuePage {
       return `${Math.round(bytes / 102.4) / 10} KB`
     }
     return `${Math.floor(bytes)} B`
+  }
+
+  /** The storage summary always renders a size, including an explicit zero. */
+  private summarySizeText(bytes: number): string {
+    const text: string = this.byteSizeText(bytes)
+    return text.length > 0 ? text : '0 B'
+  }
+
+  private storageUsageSummaryText(): string {
+    if (this.downloadQueue.galleryTasks.length + this.downloadQueue.archiverTasks.length === 0) {
+      return ''
+    }
+    return AppStrings.get('download_storage_usage_summary')
+      .replace('%1$s', this.summarySizeText(this.galleryTotalBytes + this.archiverTotalBytes))
+      .replace('%2$s', this.summarySizeText(this.galleryTotalBytes))
+      .replace('%3$s', this.summarySizeText(this.archiverTotalBytes))
   }
 
   private taskProgressLabel(
@@ -1323,6 +1360,20 @@ export struct DownloadQueuePage {
   }
 
   @Builder
+  private StorageUsageSummaryRow() {
+    Text(this.storageUsageSummaryText())
+      .fontSize(ThemeConstants.FONT_SIZE_CAPTION)
+      .fontColor($r('sys.color.font_tertiary'))
+      .maxLines(1)
+      .textOverflow({ overflow: TextOverflow.Ellipsis })
+      .width('100%')
+      .padding({
+        left: ThemeConstants.SPACE_LG,
+        right: ThemeConstants.SPACE_LG,
+      })
+  }
+
+  @Builder
   private GalleryTaskSection() {
     this.GalleryTaskGroup(0)
     this.GalleryTaskGroup(1)
@@ -1817,6 +1868,24 @@ export struct DownloadQueuePage {
           this.setSortMode(DownloadSortMode.ADDED_ASC)
         })
       MenuItem({
+        content: $r('app.string.download_sort_posted_desc'),
+        symbolEndIcon: this.downloadView.sortMode === DownloadSortMode.POSTED_DESC
+          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
+          : undefined,
+      })
+        .onClick(() => {
+          this.setSortMode(DownloadSortMode.POSTED_DESC)
+        })
+      MenuItem({
+        content: $r('app.string.download_sort_posted_asc'),
+        symbolEndIcon: this.downloadView.sortMode === DownloadSortMode.POSTED_ASC
+          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
+          : undefined,
+      })
+        .onClick(() => {
+          this.setSortMode(DownloadSortMode.POSTED_ASC)
+        })
+      MenuItem({
         content: $r('app.string.download_sort_title_asc'),
         symbolEndIcon: this.downloadView.sortMode === DownloadSortMode.TITLE_ASC
           ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
@@ -1833,6 +1902,24 @@ export struct DownloadQueuePage {
       })
         .onClick(() => {
           this.setSortMode(DownloadSortMode.TITLE_DESC)
+        })
+      MenuItem({
+        content: $r('app.string.download_sort_size_desc'),
+        symbolEndIcon: this.downloadView.sortMode === DownloadSortMode.SIZE_DESC
+          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
+          : undefined,
+      })
+        .onClick(() => {
+          this.setSortMode(DownloadSortMode.SIZE_DESC)
+        })
+      MenuItem({
+        content: $r('app.string.download_sort_size_asc'),
+        symbolEndIcon: this.downloadView.sortMode === DownloadSortMode.SIZE_ASC
+          ? new SymbolGlyphModifier($r('sys.symbol.checkmark'))
+          : undefined,
+      })
+        .onClick(() => {
+          this.setSortMode(DownloadSortMode.SIZE_ASC)
         })
     }
   }
@@ -2017,6 +2104,11 @@ export struct DownloadQueuePage {
             Blank()
           }
           .height(DOWNLOAD_SELECTOR_BAR_HEIGHT)
+        }
+        if (this.storageUsageSummaryText().length > 0) {
+          ListItem() {
+            this.StorageUsageSummaryRow()
+          }
         }
         if (viewType === DownloadViewType.GALLERY && this.visibleTaskCount(viewType) > 0) {
           this.GalleryTaskSection()

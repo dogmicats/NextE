@@ -2,7 +2,7 @@ import { common } from '@kit.AbilityKit'
 import { relationalStore } from '@kit.ArkData'
 
 const LOCAL_DATA_DB_NAME: string = 'NextE.db'
-export const LOCAL_DATA_SCHEMA_VERSION: number = 25
+export const LOCAL_DATA_SCHEMA_VERSION: number = 26
 
 const LOCAL_DATA_STORE_CONFIG: relationalStore.StoreConfig = {
   name: LOCAL_DATA_DB_NAME,
@@ -13,7 +13,7 @@ const LOCAL_DATA_STORE_CONFIG: relationalStore.StoreConfig = {
 const SQL_CREATE_SCHEMA_META_TABLE: string =
   'CREATE TABLE IF NOT EXISTS schema_meta (key TEXT PRIMARY KEY NOT NULL, value TEXT NOT NULL)'
 const SQL_UPSERT_SCHEMA_VERSION: string =
-  'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'25\')'
+  'INSERT OR REPLACE INTO schema_meta (key, value) VALUES (\'schema_version\', \'26\')'
 const SQL_CREATE_TAG_TRANSLATIONS_TABLE: string =
   'CREATE TABLE IF NOT EXISTS tag_translations (' +
     'namespace TEXT NOT NULL, ' +
@@ -441,6 +441,7 @@ const SQL_CREATE_DOWNLOAD_GALLERY_TASKS_TABLE: string =
     'page_count INTEGER NOT NULL, ' +
     'category TEXT NOT NULL, ' +
     'uploader TEXT NOT NULL, ' +
+    'posted_at INTEGER NOT NULL DEFAULT 0, ' +
     'upgrade_from_gid TEXT NOT NULL DEFAULT \'\', ' +
     'queued_at INTEGER NOT NULL, ' +
     'prepared_at INTEGER NOT NULL, ' +
@@ -488,6 +489,8 @@ const SQL_ADD_DOWNLOAD_GALLERY_TASKS_PREFER_ORIGINAL: string =
   'ALTER TABLE download_gallery_tasks ADD COLUMN prefer_original INTEGER NOT NULL DEFAULT 0'
 const SQL_ADD_DOWNLOAD_GALLERY_TASKS_UPGRADE_FROM_GID: string =
   'ALTER TABLE download_gallery_tasks ADD COLUMN upgrade_from_gid TEXT NOT NULL DEFAULT \'\''
+const SQL_ADD_DOWNLOAD_GALLERY_TASKS_POSTED_AT: string =
+  'ALTER TABLE download_gallery_tasks ADD COLUMN posted_at INTEGER NOT NULL DEFAULT 0'
 const SQL_ADD_DOWNLOAD_GALLERY_TASKS_IMG_WIDTH: string =
   'ALTER TABLE download_gallery_tasks ADD COLUMN img_width INTEGER NOT NULL DEFAULT 0'
 const SQL_ADD_DOWNLOAD_GALLERY_TASKS_IMG_HEIGHT: string =
@@ -561,6 +564,7 @@ const SQL_CREATE_DOWNLOAD_ARCHIVER_TASKS_TABLE: string =
     'thumb_url TEXT NOT NULL DEFAULT \'\', ' +
     'img_width INTEGER NOT NULL DEFAULT 0, ' +
     'img_height INTEGER NOT NULL DEFAULT 0, ' +
+    'posted_at INTEGER NOT NULL DEFAULT 0, ' +
     'dltype TEXT NOT NULL, ' +
     'resolution TEXT NOT NULL, ' +
     'parse_source TEXT NOT NULL DEFAULT \'official\', ' +
@@ -586,6 +590,8 @@ const SQL_ADD_DOWNLOAD_ARCHIVER_TASKS_IMG_HEIGHT: string =
   'ALTER TABLE download_archiver_tasks ADD COLUMN img_height INTEGER NOT NULL DEFAULT 0'
 const SQL_ADD_DOWNLOAD_ARCHIVER_TASKS_PARSE_SOURCE: string =
   'ALTER TABLE download_archiver_tasks ADD COLUMN parse_source TEXT NOT NULL DEFAULT \'official\''
+const SQL_ADD_DOWNLOAD_ARCHIVER_TASKS_POSTED_AT: string =
+  'ALTER TABLE download_archiver_tasks ADD COLUMN posted_at INTEGER NOT NULL DEFAULT 0'
 const SQL_CREATE_DOWNLOAD_ARCHIVER_TASKS_QUEUED_INDEX: string =
   'CREATE INDEX IF NOT EXISTS idx_download_archiver_tasks_queued ON download_archiver_tasks (queued_at DESC)'
 
@@ -623,8 +629,8 @@ export class LocalDataStore {
   }
 
   private static async initializeSchema(store: relationalStore.RdbStore): Promise<void> {
-    // v25 adds the bounded, regenerable comic-translation document cache. Only a current, intact store may skip the
-    // cold-start DDL sweep; every earlier install runs this complete idempotent migration once.
+    // v26 adds gallery/archiver publish-time columns for download sorting. Only a current, intact store may skip
+    // the cold-start DDL sweep; every earlier install runs this complete idempotent migration once.
     if (store.version === LOCAL_DATA_SCHEMA_VERSION &&
       store.rebuilt === relationalStore.RebuildType.NONE) {
       return
@@ -678,6 +684,7 @@ export class LocalDataStore {
     await LocalDataStore.migrateDownloadGalleryPreferOriginal(store)
     await LocalDataStore.migrateDownloadGalleryUpgradeFromGid(store)
     await LocalDataStore.migrateDownloadGalleryCoverDimensions(store)
+    await LocalDataStore.migrateDownloadGalleryPostedAt(store)
     await store.executeSql(SQL_CREATE_DOWNLOAD_GALLERY_SEEDS_TABLE)
     await LocalDataStore.migrateDownloadGalleryTaskQualityKey(store)
     await store.executeSql(SQL_CREATE_DOWNLOAD_GALLERY_TASKS_QUEUED_INDEX)
@@ -687,6 +694,7 @@ export class LocalDataStore {
     await LocalDataStore.migrateDownloadArchiverThumbUrl(store)
     await LocalDataStore.migrateDownloadArchiverCoverDimensions(store)
     await LocalDataStore.migrateDownloadArchiverParseSource(store)
+    await LocalDataStore.migrateDownloadArchiverPostedAt(store)
     await store.executeSql(SQL_CREATE_DOWNLOAD_ARCHIVER_TASKS_QUEUED_INDEX)
     await store.executeSql(SQL_UPSERT_SCHEMA_VERSION)
     if (store.version !== LOCAL_DATA_SCHEMA_VERSION) {
@@ -898,6 +906,18 @@ export class LocalDataStore {
     }
   }
 
+  private static async migrateDownloadGalleryPostedAt(store: relationalStore.RdbStore): Promise<void> {
+    const hasPostedAt: boolean = await LocalDataStore.hasColumn(
+      store,
+      'download_gallery_tasks',
+      'posted_at',
+    )
+    if (hasPostedAt) {
+      return
+    }
+    await store.executeSql(SQL_ADD_DOWNLOAD_GALLERY_TASKS_POSTED_AT)
+  }
+
   private static async migrateDownloadGalleryTaskQualityKey(store: relationalStore.RdbStore): Promise<void> {
     const tasksUsePreferOriginalKey: boolean = await LocalDataStore.hasPrimaryKeyColumn(
       store,
@@ -1004,6 +1024,18 @@ export class LocalDataStore {
       return
     }
     await store.executeSql(SQL_ADD_DOWNLOAD_ARCHIVER_TASKS_PARSE_SOURCE)
+  }
+
+  private static async migrateDownloadArchiverPostedAt(store: relationalStore.RdbStore): Promise<void> {
+    const hasPostedAt: boolean = await LocalDataStore.hasColumn(
+      store,
+      'download_archiver_tasks',
+      'posted_at',
+    )
+    if (hasPostedAt) {
+      return
+    }
+    await store.executeSql(SQL_ADD_DOWNLOAD_ARCHIVER_TASKS_POSTED_AT)
   }
 
   private static async hasColumn(

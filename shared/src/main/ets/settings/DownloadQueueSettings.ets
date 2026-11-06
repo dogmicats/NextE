@@ -95,6 +95,7 @@ class DownloadGalleryTaskMetadata {
   pageCount: number = 0
   category: string = ''
   uploader: string = ''
+  postedAt: number = 0
   upgradeFromGid: string = ''
   queuedAt: number = 0
   preparedAt: number = 0
@@ -114,6 +115,7 @@ class DownloadArchiverTaskMetadata {
   thumbUrl: string = ''
   imgWidth: number = 0
   imgHeight: number = 0
+  postedAt: number = 0
   dltype: string = ''
   resolution: string = ''
   parseSource: string = DownloadArchiverParseSource.OFFICIAL
@@ -3081,6 +3083,9 @@ export class DownloadQueueSettings {
     if (task.imgHeight <= 0 && galleryTask.imgHeight > 0) {
       task.imgHeight = galleryTask.imgHeight
     }
+    if (task.postedAt <= 0 && galleryTask.postedAt > 0) {
+      task.postedAt = galleryTask.postedAt
+    }
   }
 
   private static writeTextFile(path: string, text: string, event: string): void {
@@ -3112,6 +3117,7 @@ export class DownloadQueueSettings {
     out.pageCount = task.pageCount
     out.category = task.category
     out.uploader = task.uploader
+    out.postedAt = task.postedAt
     out.upgradeFromGid = task.upgradeFromGid
     out.queuedAt = task.queuedAt
     out.preparedAt = task.preparedAt
@@ -3150,6 +3156,7 @@ export class DownloadQueueSettings {
     out.thumbUrl = task.thumbUrl
     out.imgWidth = task.imgWidth
     out.imgHeight = task.imgHeight
+    out.postedAt = task.postedAt
     out.dltype = task.dltype
     out.resolution = task.resolution
     out.parseSource = task.parseSource
@@ -4105,6 +4112,7 @@ export class DownloadQueueSettings {
             task.pageCount = typeof rec.pageCount === 'number' ? rec.pageCount : 0
             task.category = typeof rec.category === 'string' ? rec.category : ''
             task.uploader = typeof rec.uploader === 'string' ? rec.uploader : ''
+            task.postedAt = typeof rec.postedAt === 'number' ? rec.postedAt : 0
             task.upgradeFromGid = typeof rec.upgradeFromGid === 'string' ? rec.upgradeFromGid : ''
             task.queuedAt = typeof rec.queuedAt === 'number' ? rec.queuedAt : 0
             task.preparedAt = typeof rec.preparedAt === 'number' ? rec.preparedAt : 0
@@ -4143,6 +4151,7 @@ export class DownloadQueueSettings {
             task.thumbUrl = typeof rec.thumbUrl === 'string' ? rec.thumbUrl : ''
             task.imgWidth = typeof rec.imgWidth === 'number' ? rec.imgWidth : 0
             task.imgHeight = typeof rec.imgHeight === 'number' ? rec.imgHeight : 0
+            task.postedAt = typeof rec.postedAt === 'number' ? rec.postedAt : 0
             task.dltype = typeof rec.dltype === 'string' ? rec.dltype : ''
             task.resolution = typeof rec.resolution === 'string' ? rec.resolution : ''
             task.parseSource = typeof rec.parseSource === 'string'

@@ -113,12 +113,32 @@
       "value": "Oldest first"
     },
     {
+      "name": "download_sort_posted_desc",
+      "value": "Publish time, newest first"
+    },
+    {
+      "name": "download_sort_posted_asc",
+      "value": "Publish time, oldest first"
+    },
+    {
       "name": "download_sort_title_asc",
       "value": "Title A-Z"
     },
     {
       "name": "download_sort_title_desc",
       "value": "Title Z-A"
+    },
+    {
+      "name": "download_sort_size_desc",
+      "value": "Size, largest first"
+    },
+    {
+      "name": "download_sort_size_asc",
+      "value": "Size, smallest first"
+    },
+    {
+      "name": "download_storage_usage_summary",
+      "value": "Downloaded storage: %1$s · Gallery: %2$s · Archive: %3$s"
     },
     {
       "name": "download_group_active",

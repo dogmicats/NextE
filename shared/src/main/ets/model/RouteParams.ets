@@ -90,6 +90,8 @@ export class GalleryArchiverParams {
   thumbUrl: string = ''
   imgWidth: number = 0
   imgHeight: number = 0
+  // Source gallery publish time in ms epoch. Lets archiver tasks join publish-time sorting.
+  postedAt: number = 0
 
   constructor(
     gid: string = '',
@@ -100,6 +102,7 @@ export class GalleryArchiverParams {
     thumbUrl: string = '',
     imgWidth: number = 0,
     imgHeight: number = 0,
+    postedAt: number = 0,
   ) {
     this.gid = gid
     this.token = token
@@ -109,6 +112,7 @@ export class GalleryArchiverParams {
     this.thumbUrl = thumbUrl
     this.imgWidth = imgWidth
     this.imgHeight = imgHeight
+    this.postedAt = postedAt
   }
 }
 

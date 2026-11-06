@@ -69,6 +69,12 @@ ok('LocalDataStore persists download cover dimensions for stable source-detail s
     /img_height INTEGER NOT NULL DEFAULT 0/.test(store) &&
     /migrateDownloadGalleryCoverDimensions/.test(store) &&
     /migrateDownloadArchiverCoverDimensions/.test(store))
+ok('LocalDataStore persists download publish time for publish-time sorting',
+  /posted_at INTEGER NOT NULL DEFAULT 0/.test(store) &&
+    /migrateDownloadGalleryPostedAt/.test(store) &&
+    /migrateDownloadArchiverPostedAt/.test(store) &&
+    /ALTER TABLE download_gallery_tasks ADD COLUMN posted_at/.test(store) &&
+    /ALTER TABLE download_archiver_tasks ADD COLUMN posted_at/.test(store))
 ok('LocalDataStore creates archiver download task table',
     /download_archiver_tasks/.test(store) &&
     /PRIMARY KEY\(scope_key, tag\)/.test(store) &&
@@ -178,6 +184,11 @@ ok('repository persists gallery and archiver cover dimensions',
     /task\.imgHeight/.test(repo) &&
     /SELECT gid, token, title, title_jp, thumb_url, img_width, img_height/.test(repo) &&
     /SELECT tag, gid, token, title, thumb_url, img_width, img_height/.test(repo))
+ok('repository persists gallery and archiver publish time',
+  /posted_at/.test(repo) &&
+    /task\.postedAt/.test(repo) &&
+    /uploader, posted_at, upgrade_from_gid/.test(repo) &&
+    /img_width, img_height, posted_at, dltype/.test(repo))
 ok('repository does not persist false complete status for partially downloaded galleries',
   /normalizedGalleryStatusForWrite\(task\)/.test(repo) &&
     /status === DownloadGalleryTaskStatus\.COMPLETE && !task\.isDownloadComplete\(\)/.test(repo) &&

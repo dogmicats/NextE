@@ -113,12 +113,32 @@
       "value": "添加时间从旧到新"
     },
     {
+      "name": "download_sort_posted_desc",
+      "value": "发布时间从新到旧"
+    },
+    {
+      "name": "download_sort_posted_asc",
+      "value": "发布时间从旧到新"
+    },
+    {
       "name": "download_sort_title_asc",
       "value": "标题 A-Z"
     },
     {
       "name": "download_sort_title_desc",
       "value": "标题 Z-A"
+    },
+    {
+      "name": "download_sort_size_desc",
+      "value": "占用空间从大到小"
+    },
+    {
+      "name": "download_sort_size_asc",
+      "value": "占用空间从小到大"
+    },
+    {
+      "name": "download_storage_usage_summary",
+      "value": "已下载占用 %1$s · 画廊 %2$s · 归档 %3$s"
     },
     {
       "name": "download_group_active",

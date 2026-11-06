@@ -1014,6 +1014,7 @@ export struct GalleryDetailPage {
       thumbUrl,
       this.vm.gallery.imgWidth,
       this.vm.gallery.imgHeight,
+      DownloadGalleryTask.parsePostedAt(this.vm.gallery.posted),
     )
     this.openDetailSheet(DETAIL_SHEET_ARCHIVER)
   }
